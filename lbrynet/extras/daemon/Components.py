@@ -265,7 +265,7 @@ class HeadersComponent(Component):
             finally:
                 self._downloading_headers = False
 
-    def stop(self):
+    async def stop(self):
         pass
 
 
@@ -331,8 +331,10 @@ class BlobComponent(Component):
                                             storage, data_store)
         return await self.blob_manager.setup()
 
-    def stop(self):
-        pass
+    async def stop(self):
+        while self.blob_manager and self.blob_manager.blobs:
+            _, blob = self.blob_manager.blobs.popitem()
+            await blob.close()
 
     async def get_status(self):
         count = 0
@@ -628,7 +630,7 @@ class UPnPComponent(Component):
             await asyncio.wait([
                 self.upnp.delete_port_mapping(port, protocol) for protocol, port in self.upnp_redirects.items()
             ])
-        if self._maintain_redirects_task is not None and not self._maintain_redirects_task.done():
+        if self._maintain_redirects_task and not self._maintain_redirects_task.done():
             self._maintain_redirects_task.cancel()
 
     async def get_status(self):

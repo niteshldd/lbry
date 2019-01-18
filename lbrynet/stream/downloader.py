@@ -3,6 +3,7 @@ import asyncio
 import typing
 import logging
 from lbrynet import conf
+from lbrynet.utils import drain_tasks, cancel_task
 from lbrynet.stream.assembler import StreamAssembler
 from lbrynet.blob_exchange.client import BlobExchangeClientProtocol, request_blob
 if typing.TYPE_CHECKING:
@@ -12,21 +13,6 @@ if typing.TYPE_CHECKING:
     from lbrynet.blob.blob_file import BlobFile
 
 log = logging.getLogger(__name__)
-
-
-def cancel_task(task: typing.Optional[asyncio.Task]):
-    if task and not (task.done() or task.cancelled()):
-        task.cancel()
-
-
-def cancel_tasks(tasks: typing.List[typing.Optional[asyncio.Task]]):
-    for task in tasks:
-        cancel_task(task)
-
-
-def drain_tasks(tasks: typing.List[typing.Optional[asyncio.Task]]):
-    while tasks:
-        cancel_task(tasks.pop())
 
 
 def drain_into(a: list, b: list):
@@ -280,7 +266,4 @@ class StreamDownloader(StreamAssembler):
 
     def download(self, node: 'Node'):
         self.accumulate_connections_task = self.loop.create_task(self._accumulate_connections(node))
-        try:
-            self.download_task = self.loop.create_task(self._download())
-        except asyncio.CancelledError:
-            log.exception("cancelled")
+        self.download_task = self.loop.create_task(self._download())

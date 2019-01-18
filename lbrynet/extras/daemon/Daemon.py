@@ -306,12 +306,16 @@ class Daemon(metaclass=JSONRPCServerType):
                 self.handler, conf.settings['api_host'], conf.settings['api_port']
             )
             log.info('lbrynet API listening on TCP %s:%i', *self.server.sockets[0].getsockname()[:2])
-            await self.setup()
         except OSError:
             log.error('lbrynet API failed to bind TCP %s:%i for listening. Daemon is already running or this port is '
                       'already in use by another application.', conf.settings['api_host'], conf.settings['api_port'])
+            raise
+        try:
+            await self.setup()
         except asyncio.CancelledError:
             log.info("shutting down before finished starting")
+            await self.shutdown()
+            raise
         except Exception as err:
             log.exception('Failed to start lbrynet-daemon')
             await self.component_manager.analytics_manager.send_server_startup_error(str(err))

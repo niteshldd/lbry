@@ -127,7 +127,7 @@ class ComponentManager:
             if component.component_name in callbacks:
                 maybe_coro = callbacks[component.component_name](component)
                 if asyncio.iscoroutine(maybe_coro):
-                    asyncio.create_task(maybe_coro)
+                    await asyncio.create_task(maybe_coro)
 
         stages = self.sort_components()
         for stage in stages:
@@ -141,8 +141,6 @@ class ComponentManager:
     async def stop(self):
         """
         Stop Components in reversed startup order
-
-        :return: (defer.Deferred)
         """
         stages = self.sort_components(reverse=True)
         for stage in stages:
@@ -150,7 +148,7 @@ class ComponentManager:
                 component._stop() for component in stage if component.running
             ]
             if needing_stop:
-                await asyncio.wait(needing_stop)
+                await asyncio.wait(needing_stop, loop=self.loop)
 
     def all_components_running(self, *component_names):
         """

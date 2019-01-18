@@ -148,8 +148,8 @@ class StreamManager:
         claim = ClaimDict.load_dict(claim_info['value'])
         downloader = StreamDownloader(self.loop, self.blob_manager, claim.source_hash.decode(), self.peer_timeout,
                                       self.peer_connect_timeout, download_directory, file_name, self.fixed_peers)
-        downloader.download(node)
         try:
+            downloader.download(node)
             await asyncio.wait_for(downloader.got_descriptor.wait(), sd_blob_timeout)
             log.info("got descriptor %s for %s", claim.source_hash.decode(), claim_info['name'])
         except (asyncio.TimeoutError, asyncio.CancelledError):
